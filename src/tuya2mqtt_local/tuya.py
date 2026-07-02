@@ -1,9 +1,10 @@
 import logging
-import time
 from typing import Any, Optional
+
 import tinytuya
 
 logger = logging.getLogger(__name__)
+
 
 class TuyaClient:
     def __init__(self, device_config: dict[str, Any], exit_on_command_error: bool = True):
@@ -13,13 +14,26 @@ class TuyaClient:
         self.local_key = device_config["local_key"]
         self.version = device_config.get("version", "3.3")
         self.name = device_config["name"]
+        self.dev_type = device_config.get("dev_type", "default")
+        self.connection_timeout = device_config.get("connection_timeout_seconds", 5)
+        self.connection_retry_limit = device_config.get("connection_retry_limit", 3)
+        self.connection_retry_delay = device_config.get("connection_retry_delay_seconds", 5)
+        self.persist = device_config.get("persist", False)
+        self.max_simultaneous_dps = device_config.get("max_simultaneous_dps", 0)
         self.exit_on_command_error = exit_on_command_error
 
-        print(self.name, 'CONFIG:', self.config)
-        
-        self.device = tinytuya.Device(self.device_id, self.ip, self.local_key)
+        self.device = tinytuya.Device(
+            self.device_id,
+            self.ip,
+            self.local_key,
+            dev_type=self.dev_type,
+            connection_timeout=self.connection_timeout,
+            persist=self.persist,
+            connection_retry_limit=self.connection_retry_limit,
+            connection_retry_delay=self.connection_retry_delay,
+            max_simultaneous_dps=self.max_simultaneous_dps,
+        )
         self.device.set_version(float(self.version))
-        self.device.set_socketRetryLimit(3)
         self._is_online = False
 
     def status(self) -> Optional[dict[str, Any]]:
@@ -30,18 +44,28 @@ class TuyaClient:
                 self._is_online = True
                 return data["dps"]
             elif data and "Error" in data:
-                error_msg = f"Error getting status for {self.name} ({self.device_id}): {data['Error']}"
+                error_msg = (
+                    f"Error getting status for {self.name} ({self.device_id}): {data['Error']}. "
+                    f"Check version={self.version}, dev_type={self.dev_type}, "
+                    f"persist={self.persist}, and local_key."
+                )
                 if self.exit_on_command_error:
                     logger.critical(f"{error_msg} - Exiting process as configured.")
                     import sys
+
                     sys.exit(1)
                 logger.error(error_msg)
             else:
                 logger.debug(f"Device {self.name} ({self.device_id}) returned no DPS data")
         except Exception as e:
-            if self.exit_on_command_error and ("DecodeError" in str(type(e)) or "unexpected payload" in str(e).lower()):
-                logger.critical(f"Fatal error getting status for {self.name}: {e} - Exiting process as configured.")
+            if self.exit_on_command_error and (
+                "DecodeError" in str(type(e)) or "unexpected payload" in str(e).lower()
+            ):
+                logger.critical(
+                    f"Fatal error getting status for {self.name}: {e} - Exiting process as configured."
+                )
                 import sys
+
                 sys.exit(1)
             logger.error(f"Failed to get status for {self.name}: {e}")
         
@@ -51,14 +75,9 @@ class TuyaClient:
     def _cast_value(self, dps_id: str, value: Any) -> Any:
         """Cast value according to device schema."""
         mappings = self.config.get("mappings", {})
-        print('MAPPING:', mappings)
 
         dps_meta = next((meta for meta in mappings.values() if str(meta.get("dps")) == str(dps_id)), {})
-        print('META:', dps_meta)
-        
         dps_type = dps_meta.get("type", "").lower()
-
-        print('TYPE (DPS)'+dps_id," : ", dps_type)
 
         try:
             if dps_type == "integer":

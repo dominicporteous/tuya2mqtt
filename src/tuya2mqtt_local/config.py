@@ -78,7 +78,7 @@ def load_config(path: str) -> dict[str, Any]:
                         code = info.get("code")
                         type = info.get("type")
                         if code in DP_CODE_TO_INTERNAL:
-                            internal_key = DP_CODE_TO_INTERNAL[code]
+                            internal_key = _internal_mapping_key(device.get("profile"), code)
                             m = {"dps": str(dps_id), "type": type.lower()}
                             
                             # Handle scale (Tuya scale 1 = divide by 10)
@@ -106,6 +106,11 @@ def load_config(path: str) -> dict[str, Any]:
 
     validate_config(config)
     return config
+
+def _internal_mapping_key(profile: str | None, code: str) -> str:
+    if profile == "plug" and code == "switch":
+        return "switch"
+    return DP_CODE_TO_INTERNAL[code]
 
 def validate_config(config: dict[str, Any]):
     required_sections = ["mqtt", "bridge", "devices"]

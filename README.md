@@ -63,11 +63,41 @@ devices:
     id: bf1234567890abcdef
     ip: 192.168.0.55
     local_key: abcdef0123456789
+    version: "3.3"
+    dev_type: default
     profile: plug
     mappings:
       switch:
         dps: "1"
 ```
+
+### Troubleshooting Tuya Local Communication
+
+If TinyTuya reports `Unexpected Payload from Device`, or logs an AES padding error after it
+receives a response from the device, the usual next step is to test protocol and device type
+settings. For example:
+
+```yaml
+devices:
+  - key: bedroom-lamp
+    name: Bedroom Lamp
+    id: 05185026a4cf12d5f7b2
+    ip: 192.168.0.55
+    local_key: abcdef0123456789
+    version: "3.4"
+    dev_type: device22
+    profile: plug
+```
+
+Try these combinations, restarting the bridge between each change:
+
+- `version: "3.4"` with `dev_type: default`
+- `version: "3.4"` with `dev_type: device22`
+- `version: "3.5"` with `dev_type: default`
+- `version: "3.3"` with `dev_type: device22`
+
+Also confirm the configured IP belongs to the same physical device as the device ID, because DHCP
+changes can produce the same decryption-looking error even when the local key is correct.
 
 ## Running
 

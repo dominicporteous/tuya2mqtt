@@ -4,6 +4,31 @@ from .profiles import get_profile
 
 logger = logging.getLogger(__name__)
 
+def get_discovery_payload(device_config: dict[str, Any], mqtt_config: dict[str, Any]) -> dict[str, Any]:
+    profile = get_profile(device_config["profile"])
+    if not profile:
+        raise ValueError(f"No profile found for {device_config['profile']}")
+
+    device_key = device_config["key"]
+    base_topic = f"{mqtt_config.get('base_topic', 'tuya')}/{device_key}"
+
+    return {
+        "~": base_topic,
+        "state_topic": f"{base_topic}/state",
+        "availability_topic": f"{base_topic}/availability",
+        "dev": {
+            "ids": [f"tuya_{device_config['id']}"],
+            "name": device_config["name"],
+            "mf": device_config.get("manufacturer", "Tuya"),
+            "mdl": device_config.get("model", "Generic Device"),
+        },
+        "o": {
+            "name": "tuya2mqtt",
+            "sw": "0.1.0",
+        },
+        "cmps": profile.discovery_components(device_config, mqtt_config),
+    }
+
 def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
     mqtt_config = config["mqtt"]
     discovery_prefix = mqtt_config.get("discovery_prefix", "homeassistant")

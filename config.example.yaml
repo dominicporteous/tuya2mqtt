@@ -27,6 +27,12 @@ devices:
     ip: 192.168.0.55
     local_key: abcdef0123456789 # Optional (if using wizard/devices.json)
     version: "3.3" # Optional (if using wizard/devices.json)
+    dev_type: default # Optional; try device22 if status fails with unexpected payload.
+    persist: false # Optional; keep the device socket open between commands.
+    connection_timeout_seconds: 5 # Optional
+    connection_retry_limit: 3 # Optional
+    connection_retry_delay_seconds: 5 # Optional
+    max_simultaneous_dps: 0 # Optional; useful for some devices with many DPS values.
     profile: plug # Optional (if using wizard/devices.json)
     manufacturer: Tuya # Optional (if using wizard/devices.json)
     model: Generic Power Plug # Optional (if using wizard/devices.json)

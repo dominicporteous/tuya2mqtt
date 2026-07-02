@@ -22,12 +22,12 @@ class PlugProfile(DeviceProfile):
             
         return state
 
-    def command_to_dps(self, command: str, payload: str, mappings: dict[str, Any]) -> tuple[Optional[str], Any]:
+    def command_to_dps(self, command: str, payload: str, mappings: dict[str, Any]) -> list[tuple[Optional[str], Any]]:
         if command == "switch" and "switch" in mappings:
             dps_id = mappings["switch"]["dps"]
             value = True if payload.upper() == "ON" else False
-            return dps_id, value
-        return None, None
+            return [(dps_id, value)]
+        return []
 
     def discovery_components(self, device_config: dict[str, Any], mqtt_config: dict[str, Any]) -> dict[str, Any]:
         mappings = device_config.get("mappings", {})

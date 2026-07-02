@@ -22,11 +22,11 @@ def test_plug_command():
     profile = PlugProfile()
     mappings = {"switch": {"dps": "1"}}
     
-    dps, val = profile.command_to_dps("switch", "ON", mappings)
+    [(dps, val)] = profile.command_to_dps("switch", "ON", mappings)
     assert dps == "1"
     assert val is True
     
-    dps, val = profile.command_to_dps("switch", "OFF", mappings)
+    [(dps, val)] = profile.command_to_dps("switch", "OFF", mappings)
     assert dps == "1"
     assert val is False
 
@@ -47,7 +47,7 @@ def test_aircon_mode_mapping():
     assert state["mode"] == "dry"
     
     # Command reverse mapping
-    dps, val = profile.command_to_dps("mode", "dry", mappings)
+    [(dps, val)] = profile.command_to_dps("mode", "dry", mappings)
     assert dps == "2"
     assert val == "wet"
 
@@ -57,6 +57,6 @@ def test_aircon_temp_scaling():
         "target_temperature": {"dps": "3"}
     }
     
-    dps, val = profile.command_to_dps("target_temperature", "22", mappings)
+    [(dps, val)] = profile.command_to_dps("target_temperature", "22", mappings)
     assert dps == "3"
     assert val == 22
