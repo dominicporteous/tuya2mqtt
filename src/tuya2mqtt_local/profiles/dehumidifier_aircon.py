@@ -78,7 +78,7 @@ class DehumidifierAirconProfile(DeviceProfile):
 
     def discovery_components(self, device_config: dict[str, Any], mqtt_config: dict[str, Any]) -> dict[str, Any]:
         mappings = device_config.get("mappings", {})
-        device_name = device_config.get("name", "Bedroom Aircon")
+        device_name = device_config.get("name", "Unknown Tuya Dehumidifier")
         
         components = {}
         

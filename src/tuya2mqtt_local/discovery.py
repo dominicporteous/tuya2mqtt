@@ -27,7 +27,7 @@ def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
             "mdl": device_config.get("model", "Generic Device")
         }
 
-        # Handle the specific case for the Bedroom Aircon ID reported in the mesh
+        # Handle the specific case for the ID reported in the mesh
         # If the ID is the long string, we ensure the unique_id uses it consistently
         safe_id = device_config['id']
         
