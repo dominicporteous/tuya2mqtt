@@ -1,0 +1,56 @@
+mqtt:
+  host: 192.168.0.246
+  port: 1883
+  username: null
+  password: null
+  client_id: tuya2mqtt
+  discovery_prefix: homeassistant
+  base_topic: tuya
+  retain_discovery: true
+  retain_state: false
+  birth_topic: homeassistant/status
+  birth_payload: online
+
+bridge:
+  poll_interval_seconds: 60 # Successful commands update state, so frequent polling not required.
+  availability_interval_seconds: 30
+  command_timeout_seconds: 10
+  log_level: info
+
+tinytuya:
+  scan_on_start: false
+  connect_timeout_seconds: 10
+
+devices:
+  - name: Office Plug
+    id: bf1234567890abcdef
+    ip: 192.168.0.55
+    local_key: abcdef0123456789 # Optional (if using wizard/devices.json)
+    version: "3.3" # Optional (if using wizard/devices.json)
+    profile: plug # Optional (if using wizard/devices.json)
+    manufacturer: Tuya # Optional (if using wizard/devices.json)
+    model: Generic Power Plug # Optional (if using wizard/devices.json)
+    mappings: # Custom Mappins Optional (if using wizard/devices.json)
+      switch:
+        dps: "1"
+      power:
+        dps: "19"
+        scale: 10
+        unit: W
+      voltage:
+        dps: "20"
+        scale: 10
+        unit: V
+      current:
+        dps: "18"
+        scale: 1000
+        unit: A
+
+  - name: Office Aircon
+    id: abc1234567890abcdef
+    ip: 192.168.0.56
+    local_key: fedcba9876543210 # Optional (if using wizard/devices.json)
+    version: "3.3" # Optional (if using wizard/devices.json)
+    profile: dehumidifier_aircon # Optional (if using wizard/devices.json)
+    manufacturer: Tuya # Optional (if using wizard/devices.json)
+    model: Tuya Dehumidifier Aircon # Optional (if using wizard/devices.json)

@@ -1,0 +1,11 @@
+services:
+  tuya2mqtt:
+    image: ghcr.io/${OWNER:-owner}/tuya2mqtt:latest
+    container_name: tuya2mqtt
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config:/config
+    # environment:
+    #   - TZ=Europe/London
+    command: ["bridge", "--config", "/config/config.yaml"]
