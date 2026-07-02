@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 # Mapping from Tuya category to internal profile name
 CATEGORY_TO_PROFILE = {
+    "bh": "kettle",  # Kettle
     "cz": "plug",  # Socket/Plug
     "kt": "dehumidifier_aircon",  # Air Conditioner
     "wk": "thermostat",  # Thermostat
@@ -20,9 +21,16 @@ DP_CODE_TO_INTERNAL = {
     "cur_power": "power",
     "cur_voltage": "voltage",
     "countdown_1": "countdown",
+    "countdown": "countdown",
+    "countdown_left": "countdown_left",
+    "start": "power",
     "temp_set": "target_temperature",
     "temp_current": "current_temperature",
     "mode": "mode",
+    "status": "status",
+    "warm": "warm",
+    "warm_time": "warm_time",
+    "work_type": "work_type",
     "fan_speed_enum": "fan_mode",
     "humidity_set": "target_humidity",
     "humidity_current": "current_humidity",
@@ -80,6 +88,8 @@ def load_config(path: str) -> dict[str, Any]:
                     device["local_key"] = match["key"]
                 if "name" not in device and "name" in match:
                     device["name"] = match["name"]
+                if "version" not in device and "version" in match:
+                    device["version"] = str(match["version"])
                 if "product_name" not in device:
                     product_name = _device_product_name(match)
                     if product_name:
@@ -89,6 +99,17 @@ def load_config(path: str) -> dict[str, Any]:
                     if category in CATEGORY_TO_PROFILE:
                         device["profile"] = CATEGORY_TO_PROFILE[category]
                         logger.debug(f"Auto-mapped device {device_id} (category {category}) to profile {device['profile']}")
+                else:
+                    category = match.get("category")
+                    expected_profile = CATEGORY_TO_PROFILE.get(category)
+                    if expected_profile and device["profile"] != expected_profile:
+                        logger.warning(
+                            "Device %s has profile=%s in config.yaml, but devices.json category %s maps to profile=%s",
+                            device_id,
+                            device["profile"],
+                            category,
+                            expected_profile,
+                        )
 
                 # Populate mappings from devices.json if missing in config.yaml
                 if "mappings" not in device and "mapping" in match:
@@ -107,10 +128,14 @@ def load_config(path: str) -> dict[str, Any]:
                             if isinstance(values, dict):
                                 if values.get("scale") == 1:
                                     m["scale"] = 10
-                                if "min" in values: m["min"] = values["min"]
-                                if "max" in values: m["max"] = values["max"]
-                                if "step" in values: m["step"] = values["step"]
-                                if "unit" in values: m["unit"] = values["unit"]
+                                if "min" in values:
+                                    m["min"] = values["min"]
+                                if "max" in values:
+                                    m["max"] = values["max"]
+                                if "step" in values:
+                                    m["step"] = values["step"]
+                                if "unit" in values:
+                                    m["unit"] = values["unit"]
                                 
                                 # Mode/Fan translation
                                 if code == "mode" and "range" in values:
@@ -118,11 +143,19 @@ def load_config(path: str) -> dict[str, Any]:
                                     m["values"] = {v: translations.get(v, v) for v in values["range"]}
                                 if code == "fan_speed_enum" and "range" in values:
                                     m["values"] = {v: v for v in values["range"]}
+                                if (
+                                    device.get("profile") == "kettle"
+                                    and code in ("status", "work_type")
+                                    and "range" in values
+                                ):
+                                    m["values"] = {v: v for v in values["range"]}
 
                             if device.get("profile") == "thermostat" and code in ("temp_set", "upper_temp"):
                                 m["scale"] = 2
-                                if "min" in m: m["min"] = m["min"] / 2
-                                if "max" in m: m["max"] = m["max"] / 2
+                                if "min" in m:
+                                    m["min"] = m["min"] / 2
+                                if "max" in m:
+                                    m["max"] = m["max"] / 2
                                 if code == "temp_set":
                                     m["step"] = 0.5
 

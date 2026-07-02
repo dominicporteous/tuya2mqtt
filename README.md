@@ -56,6 +56,7 @@ devices:
 The bridge currently supports auto-mapping these Tuya categories:
 
 - `cz` (Socket/Plug) -> profile: `plug`
+- `bh` (Kettle) -> profile: `kettle`
 - `kt` (Air Conditioner) -> profile: `dehumidifier_aircon`
 - `wk` (Thermostat) -> profile: `thermostat`
 

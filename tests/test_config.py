@@ -189,3 +189,147 @@ def test_thermostat_auto_mapping_uses_wk_category(tmp_path):
         "sensor_mode": {"dps": "103", "type": "string"},
         "thermostat_active": {"dps": "104", "type": "boolean"},
     }
+
+
+def test_kettle_auto_mapping_uses_bh_category(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    devices_path = tmp_path / "devices.json"
+
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "mqtt": {"host": "localhost"},
+                "bridge": {},
+                "devices": [{"id": "kettle-device", "ip": "192.168.1.111"}],
+            }
+        )
+    )
+    devices_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "kettle-device",
+                    "name": "Kettle",
+                    "key": "0123456789abcdef",
+                    "category": "bh",
+                    "version": "3.5",
+                    "product_name": "HEATROW 2023",
+                    "mapping": {
+                        "1": {"code": "start", "type": "Boolean", "values": {}},
+                        "2": {
+                            "code": "temp_current",
+                            "type": "Integer",
+                            "values": {"unit": "\u00b0C", "min": 0, "max": 100, "scale": 0, "step": 1},
+                        },
+                        "4": {
+                            "code": "temp_set",
+                            "type": "Integer",
+                            "values": {"unit": "\u00b0C", "min": 0, "max": 100, "scale": 0, "step": 1},
+                        },
+                        "7": {
+                            "code": "warm_time",
+                            "type": "Integer",
+                            "values": {"unit": "min", "min": 0, "max": 720, "scale": 0, "step": 1},
+                        },
+                        "8": {
+                            "code": "status",
+                            "type": "Enum",
+                            "values": {"range": ["standby", "heating", "cooling", "warm"]},
+                        },
+                        "9": {
+                            "code": "work_type",
+                            "type": "Enum",
+                            "values": {"range": ["boiling_quick"]},
+                        },
+                        "12": {
+                            "code": "countdown",
+                            "type": "Integer",
+                            "values": {"unit": "min", "min": 0, "max": 720, "scale": 0, "step": 1},
+                        },
+                        "13": {
+                            "code": "countdown_left",
+                            "type": "Integer",
+                            "values": {"unit": "min", "min": 0, "max": 720, "scale": 0, "step": 1},
+                        },
+                        "14": {"code": "warm", "type": "Boolean", "values": {}},
+                    },
+                }
+            ]
+        )
+    )
+
+    config = load_config(str(config_path))
+
+    [device] = config["devices"]
+    assert device["profile"] == "kettle"
+    assert device["version"] == "3.5"
+    assert device["product_name"] == "HEATROW 2023"
+    assert device["mappings"] == {
+        "power": {"dps": "1", "type": "boolean"},
+        "current_temperature": {
+            "dps": "2",
+            "type": "integer",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "unit": "\u00b0C",
+        },
+        "target_temperature": {
+            "dps": "4",
+            "type": "integer",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "unit": "\u00b0C",
+        },
+        "warm_time": {"dps": "7", "type": "integer", "min": 0, "max": 720, "step": 1, "unit": "min"},
+        "status": {
+            "dps": "8",
+            "type": "enum",
+            "values": {"standby": "standby", "heating": "heating", "cooling": "cooling", "warm": "warm"},
+        },
+        "work_type": {"dps": "9", "type": "enum", "values": {"boiling_quick": "boiling_quick"}},
+        "countdown": {"dps": "12", "type": "integer", "min": 0, "max": 720, "step": 1, "unit": "min"},
+        "countdown_left": {"dps": "13", "type": "integer", "min": 0, "max": 720, "step": 1, "unit": "min"},
+        "warm": {"dps": "14", "type": "boolean"},
+    }
+
+
+def test_profile_mismatch_with_devices_json_category_is_warned(tmp_path, caplog):
+    config_path = tmp_path / "config.yaml"
+    devices_path = tmp_path / "devices.json"
+
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "mqtt": {"host": "localhost"},
+                "bridge": {},
+                "devices": [
+                    {
+                        "id": "kettle-device",
+                        "ip": "192.168.1.111",
+                        "profile": "thermostat",
+                    }
+                ],
+            }
+        )
+    )
+    devices_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "kettle-device",
+                    "name": "Kettle",
+                    "key": "0123456789abcdef",
+                    "category": "bh",
+                    "mapping": {"1": {"code": "start", "type": "Boolean", "values": {}}},
+                }
+            ]
+        )
+    )
+
+    config = load_config(str(config_path))
+
+    [device] = config["devices"]
+    assert device["profile"] == "thermostat"
+    assert "category bh maps to profile=kettle" in caplog.text

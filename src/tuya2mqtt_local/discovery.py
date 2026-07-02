@@ -4,6 +4,32 @@ from .profiles import get_profile
 
 logger = logging.getLogger(__name__)
 
+KNOWN_DISCOVERY_COMPONENTS = {
+    ("ambient_temperature", "sensor"),
+    ("child_lock", "switch"),
+    ("climate", "climate"),
+    ("countdown", "number"),
+    ("countdown", "sensor"),
+    ("countdown_left", "sensor"),
+    ("current", "sensor"),
+    ("current_humidity", "sensor"),
+    ("current_temperature", "sensor"),
+    ("eco", "switch"),
+    ("power", "sensor"),
+    ("power", "switch"),
+    ("sensor_mode", "sensor"),
+    ("status", "sensor"),
+    ("switch", "switch"),
+    ("target_humidity", "number"),
+    ("target_temperature", "number"),
+    ("thermostat_active", "binary_sensor"),
+    ("voltage", "sensor"),
+    ("warm", "switch"),
+    ("warm_time", "number"),
+    ("work_type", "select"),
+}
+
+
 def get_discovery_payload(device_config: dict[str, Any], mqtt_config: dict[str, Any]) -> dict[str, Any]:
     profile = get_profile(device_config["profile"])
     if not profile:
@@ -62,6 +88,7 @@ def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
         }
 
         components = profile.discovery_components(device_config, mqtt_config)
+        _clear_stale_discovery(mqtt_client, discovery_prefix, safe_id, components, retain)
         
         # In multi-topic discovery, we publish each component to its own topic
         # homeassistant/<component_type>/tuya_<safe_id>_<cmp_id>/config
@@ -86,6 +113,30 @@ def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
             topic = f"{discovery_prefix}/{component_type}/tuya_{safe_id}_{cmp_id}/config"
             mqtt_client.publish(topic, payload, retain=retain)
             logger.info(f"Published discovery for {device_key} {component_type} ({cmp_id})")
+
+
+def _clear_stale_discovery(
+    mqtt_client: Any,
+    discovery_prefix: str,
+    safe_id: str,
+    active_components: dict[str, dict[str, Any]],
+    retain: bool,
+):
+    if not retain:
+        return
+
+    active_topics = {
+        f"{discovery_prefix}/{cmp_config.get('p')}/tuya_{safe_id}_{cmp_id}/config"
+        for cmp_id, cmp_config in active_components.items()
+        if cmp_config.get("p")
+    }
+
+    for cmp_id, component_type in KNOWN_DISCOVERY_COMPONENTS:
+        topic = f"{discovery_prefix}/{component_type}/tuya_{safe_id}_{cmp_id}/config"
+        if topic not in active_topics:
+            mqtt_client.publish(topic, "", retain=True)
+            logger.debug(f"Cleared stale discovery topic {topic}")
+
 
 def _discovery_model(device_config: dict[str, Any]) -> str:
     return device_config.get("product_name") or device_config.get("model") or "Generic Device"

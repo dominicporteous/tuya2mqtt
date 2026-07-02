@@ -1,6 +1,6 @@
-import pytest
 from tuya2mqtt_local.profiles.plug import PlugProfile
 from tuya2mqtt_local.profiles.dehumidifier_aircon import DehumidifierAirconProfile
+from tuya2mqtt_local.profiles.kettle import KettleProfile
 from tuya2mqtt_local.profiles.thermostat import ThermostatProfile
 
 def test_plug_normalization():
@@ -153,3 +153,89 @@ def test_thermostat_discovery_includes_climate_without_mode_dps():
     assert components["ambient_temperature"]["p"] == "sensor"
     assert components["sensor_mode"]["p"] == "sensor"
     assert components["thermostat_active"]["p"] == "binary_sensor"
+
+
+def test_kettle_normalization():
+    profile = KettleProfile()
+    mappings = {
+        "power": {"dps": "1"},
+        "current_temperature": {"dps": "2", "unit": "\u00b0C"},
+        "target_temperature": {"dps": "4", "unit": "\u00b0C"},
+        "warm_time": {"dps": "7", "unit": "min"},
+        "status": {"dps": "8"},
+        "work_type": {"dps": "9"},
+        "countdown": {"dps": "12", "unit": "min"},
+        "countdown_left": {"dps": "13", "unit": "min"},
+        "warm": {"dps": "14"},
+    }
+
+    state = profile.normalize_state(
+        {
+            "1": False,
+            "2": 32,
+            "4": 100,
+            "7": 0,
+            "8": "standby",
+            "9": "heating_quick",
+            "12": 0,
+            "13": 0,
+            "14": False,
+        },
+        mappings,
+    )
+
+    assert state == {
+        "power": False,
+        "current_temperature": 32,
+        "target_temperature": 100,
+        "warm_time": 0,
+        "status": "standby",
+        "work_type": "heating_quick",
+        "countdown": 0,
+        "countdown_left": 0,
+        "warm": False,
+    }
+
+
+def test_kettle_commands():
+    profile = KettleProfile()
+    mappings = {
+        "power": {"dps": "1"},
+        "target_temperature": {"dps": "4"},
+        "warm": {"dps": "14"},
+        "work_type": {"dps": "9", "values": {"boiling_quick": "boiling_quick"}},
+    }
+
+    assert profile.command_to_dps("power", "ON", mappings) == [("1", True)]
+    assert profile.command_to_dps("warm", "OFF", mappings) == [("14", False)]
+    assert profile.command_to_dps("target_temperature", "90", mappings) == [("4", 90)]
+    assert profile.command_to_dps("work_type", "boiling_quick", mappings) == [("9", "boiling_quick")]
+
+
+def test_kettle_discovery_components():
+    profile = KettleProfile()
+    components = profile.discovery_components(
+        {
+            "key": "kettle",
+            "name": "Kettle",
+            "mappings": {
+                "power": {"dps": "1"},
+                "current_temperature": {"dps": "2", "unit": "\u00b0C"},
+                "target_temperature": {"dps": "4", "unit": "\u00b0C", "min": 0, "max": 100, "step": 1},
+                "status": {"dps": "8", "values": {"standby": "standby", "heating": "heating"}},
+                "work_type": {"dps": "9", "values": {"boiling_quick": "boiling_quick"}},
+                "warm": {"dps": "14"},
+            },
+        },
+        {},
+    )
+
+    assert components["power"]["p"] == "switch"
+    assert components["target_temperature"]["p"] == "number"
+    assert components["target_temperature"]["cmd_t"] == "~/set/target_temperature"
+    assert components["current_temperature"]["p"] == "sensor"
+    assert components["current_temperature"]["dev_cla"] == "temperature"
+    assert components["status"]["p"] == "sensor"
+    assert components["work_type"]["p"] == "select"
+    assert components["work_type"]["options"] == ["boiling_quick"]
+    assert components["warm"]["p"] == "switch"
