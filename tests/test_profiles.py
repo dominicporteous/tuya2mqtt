@@ -8,15 +8,35 @@ def test_plug_normalization():
         "switch": {"dps": "1"},
         "power": {"dps": "19", "scale": 10},
         "voltage": {"dps": "20", "scale": 10},
-        "current": {"dps": "18", "scale": 1000}
+        "current": {"dps": "18", "scale": 1000},
+        "countdown": {"dps": "2", "unit": "s"},
     }
-    raw_dps = {"1": True, "19": 126, "20": 2354, "18": 31}
+    raw_dps = {"1": True, "19": 126, "20": 2354, "18": 31, "2": 300}
     
     state = profile.normalize_state(raw_dps, mappings)
     assert state["power"] is True
     assert state["power_w"] == 12.6
     assert state["voltage_v"] == 235.4
     assert state["current_a"] == 0.031
+    assert state["countdown_s"] == 300
+
+def test_plug_discovery_includes_countdown_sensor():
+    profile = PlugProfile()
+    components = profile.discovery_components(
+        {
+            "key": "office-plug",
+            "name": "Office Plug",
+            "mappings": {
+                "countdown": {"dps": "2", "unit": "s"},
+            },
+        },
+        {},
+    )
+
+    assert components["countdown"]["p"] == "sensor"
+    assert components["countdown"]["dev_cla"] == "duration"
+    assert components["countdown"]["unit_of_meas"] == "s"
+    assert components["countdown"]["val_tpl"] == "{{ value_json.countdown_s }}"
 
 def test_plug_command():
     profile = PlugProfile()

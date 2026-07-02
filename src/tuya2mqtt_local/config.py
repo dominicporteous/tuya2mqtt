@@ -15,6 +15,10 @@ CATEGORY_TO_PROFILE = {
 # Mapping from Tuya DP codes to internal mapping keys
 DP_CODE_TO_INTERNAL = {
     "switch": "power",
+    "cur_current": "current",
+    "cur_power": "power",
+    "cur_voltage": "voltage",
+    "countdown_1": "countdown",
     "temp_set": "target_temperature",
     "temp_current": "current_temperature",
     "mode": "mode",

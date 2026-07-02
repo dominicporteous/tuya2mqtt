@@ -31,6 +31,26 @@ def test_plug_auto_mapping_uses_switch_key(tmp_path):
                             "code": "switch",
                             "type": "Boolean",
                             "values": {},
+                        },
+                        "2": {
+                            "code": "countdown_1",
+                            "type": "Integer",
+                            "values": {"unit": "s", "min": 0, "max": 86400, "scale": 0, "step": 1},
+                        },
+                        "4": {
+                            "code": "cur_current",
+                            "type": "Integer",
+                            "values": {"unit": "mA", "min": 0, "max": 30000, "scale": 0, "step": 1},
+                        },
+                        "5": {
+                            "code": "cur_power",
+                            "type": "Integer",
+                            "values": {"unit": "W", "min": 0, "max": 50000, "scale": 0, "step": 1},
+                        },
+                        "6": {
+                            "code": "cur_voltage",
+                            "type": "Integer",
+                            "values": {"unit": "V", "min": 0, "max": 2500, "scale": 0, "step": 1},
                         }
                     },
                 }
@@ -42,4 +62,10 @@ def test_plug_auto_mapping_uses_switch_key(tmp_path):
 
     [device] = config["devices"]
     assert device["profile"] == "plug"
-    assert device["mappings"] == {"switch": {"dps": "1", "type": "boolean"}}
+    assert device["mappings"] == {
+        "switch": {"dps": "1", "type": "boolean"},
+        "countdown": {"dps": "2", "type": "integer", "min": 0, "max": 86400, "step": 1, "unit": "s"},
+        "current": {"dps": "4", "type": "integer", "min": 0, "max": 30000, "step": 1, "unit": "mA"},
+        "power": {"dps": "5", "type": "integer", "min": 0, "max": 50000, "step": 1, "unit": "W"},
+        "voltage": {"dps": "6", "type": "integer", "min": 0, "max": 2500, "step": 1, "unit": "V"},
+    }

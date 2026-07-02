@@ -19,6 +19,9 @@ class PlugProfile(DeviceProfile):
             
         if "current" in mappings:
             state["current_a"] = self._get_mapped_value(mappings["current"]["dps"], raw_dps, mappings["current"])
+
+        if "countdown" in mappings:
+            state["countdown_s"] = self._get_mapped_value(mappings["countdown"]["dps"], raw_dps, mappings["countdown"])
             
         return state
 
@@ -87,6 +90,19 @@ class PlugProfile(DeviceProfile):
                 "stat_t": "~/state",
                 "avty_t": "~/availability",
                 "val_tpl": "{{ value_json.current_a }}"
+            }
+
+        if "countdown" in mappings:
+            components["countdown"] = {
+                "p": "sensor",
+                "unique_id": f"tuya_{device_config['key']}_countdown",
+                "name": f"{device_name} Countdown",
+                "dev_cla": "duration",
+                "stat_cla": "measurement",
+                "unit_of_meas": mappings["countdown"].get("unit", "s"),
+                "stat_t": "~/state",
+                "avty_t": "~/availability",
+                "val_tpl": "{{ value_json.countdown_s }}"
             }
 
         return components
