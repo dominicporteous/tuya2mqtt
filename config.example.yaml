@@ -16,6 +16,7 @@ bridge:
   availability_interval_seconds: 30
   command_timeout_seconds: 10
   log_level: info
+  exit_on_status_error: false
 
 tinytuya:
   scan_on_start: false
@@ -36,7 +37,7 @@ devices:
     profile: plug # Optional (if using wizard/devices.json)
     manufacturer: Tuya # Optional (if using wizard/devices.json)
     model: Generic Power Plug # Optional (if using wizard/devices.json)
-    mappings: # Custom Mappins Optional (if using wizard/devices.json)
+    mappings: # Custom Mappings Optional (if using wizard/devices.json)
       switch:
         dps: "1"
       power:

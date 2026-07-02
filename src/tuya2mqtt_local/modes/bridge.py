@@ -15,6 +15,7 @@ class BridgeMode:
         self.devices: dict[str, dict[str, Any]] = {}
         
         exit_on_command_error = config["bridge"].get("exit_on_command_error", True)
+        exit_on_status_error = config["bridge"].get("exit_on_status_error", False)
         
         for device_config in config["devices"]:
             key = device_config["key"]
@@ -28,7 +29,11 @@ class BridgeMode:
             
             self.devices[key] = {
                 "config": device_config,
-                "client": TuyaClient(device_config, exit_on_command_error=exit_on_command_error),
+                "client": TuyaClient(
+                    device_config,
+                    exit_on_command_error=exit_on_command_error,
+                    exit_on_status_error=exit_on_status_error,
+                ),
                 "profile": get_profile(device_config["profile"]),
                 "last_state": {},
                 "online": False

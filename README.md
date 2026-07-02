@@ -9,6 +9,7 @@ A small Dockerized Python service that bridges local Tuya Wi-Fi devices into MQT
 - **Home Assistant Discovery**: Automatically discovers devices in Home Assistant.
 - **Listen Mode**: Interactive debug mode to observe DPS changes in real-time.
 - **Provisioning Wizard**: Built-in TinyTuya wizard to get your local keys.
+- **TinyTuya Scan**: Pass-through command for checking device IPs and protocol versions.
 
 ## What it does NOT do
 
@@ -28,6 +29,16 @@ docker run -it --rm \
 
 Then copy the discovered ID, IP, and Local Key into `config.yaml`.
 
+To scan your LAN for Tuya devices and protocol versions:
+
+```bash
+docker run -it --rm \
+  --network host \
+  -v ./config:/config \
+  tuya2mqtt:latest \
+  scan
+```
+
 ## Configuration
 
 Create a `config.yaml` based on `config.example.yaml`.
@@ -46,6 +57,7 @@ The bridge currently supports auto-mapping these Tuya categories:
 
 - `cz` (Socket/Plug) -> profile: `plug`
 - `kt` (Air Conditioner) -> profile: `dehumidifier_aircon`
+- `wk` (Thermostat) -> profile: `thermostat`
 
 ### Full Configuration
 
@@ -95,6 +107,10 @@ Try these combinations, restarting the bridge between each change:
 - `version: "3.4"` with `dev_type: device22`
 - `version: "3.5"` with `dev_type: default`
 - `version: "3.3"` with `dev_type: device22`
+
+Set `bridge.exit_on_status_error: false` while testing devices that intermittently close the
+connection during status polling. The bridge will mark the device offline for that poll and retry
+on the next interval instead of exiting.
 
 Also confirm the configured IP belongs to the same physical device as the device ID, because DHCP
 changes can produce the same decryption-looking error even when the local key is correct.

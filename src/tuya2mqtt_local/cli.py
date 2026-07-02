@@ -6,6 +6,7 @@ from .modes.bridge import BridgeMode
 from .modes.listen import listen_mode
 from .modes.wizard import wizard_mode
 from .modes.dump import dump_mode
+from .modes.scan import scan_mode
 
 @click.group()
 def cli():
@@ -45,6 +46,12 @@ def listen(config, device, interval, json_output, mqtt_debug, show_unchanged, du
 def wizard(output_dir):
     """Run TinyTuya wizard for provisioning."""
     wizard_mode(output_dir)
+
+@cli.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def scan(args):
+    """Run TinyTuya scan, forwarding any extra args."""
+    scan_mode(args)
 
 @cli.command()
 @click.option("--config", required=True, type=click.Path(exists=True), help="Path to config.yaml")

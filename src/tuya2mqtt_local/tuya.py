@@ -7,7 +7,12 @@ logger = logging.getLogger(__name__)
 
 
 class TuyaClient:
-    def __init__(self, device_config: dict[str, Any], exit_on_command_error: bool = True):
+    def __init__(
+        self,
+        device_config: dict[str, Any],
+        exit_on_command_error: bool = True,
+        exit_on_status_error: bool = False,
+    ):
         self.config = device_config
         self.device_id = device_config["id"]
         self.ip = device_config["ip"]
@@ -21,6 +26,7 @@ class TuyaClient:
         self.persist = device_config.get("persist", False)
         self.max_simultaneous_dps = device_config.get("max_simultaneous_dps", 0)
         self.exit_on_command_error = exit_on_command_error
+        self.exit_on_status_error = exit_on_status_error
 
         self.device = tinytuya.Device(
             self.device_id,
@@ -49,7 +55,7 @@ class TuyaClient:
                     f"Check version={self.version}, dev_type={self.dev_type}, "
                     f"persist={self.persist}, and local_key."
                 )
-                if self.exit_on_command_error:
+                if self.exit_on_status_error:
                     logger.critical(f"{error_msg} - Exiting process as configured.")
                     import sys
 
@@ -58,7 +64,7 @@ class TuyaClient:
             else:
                 logger.debug(f"Device {self.name} ({self.device_id}) returned no DPS data")
         except Exception as e:
-            if self.exit_on_command_error and (
+            if self.exit_on_status_error and (
                 "DecodeError" in str(type(e)) or "unexpected payload" in str(e).lower()
             ):
                 logger.critical(

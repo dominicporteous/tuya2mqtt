@@ -20,7 +20,7 @@ def get_discovery_payload(device_config: dict[str, Any], mqtt_config: dict[str, 
             "ids": [f"tuya_{device_config['id']}"],
             "name": device_config["name"],
             "mf": device_config.get("manufacturer", "Tuya"),
-            "mdl": device_config.get("model", "Generic Device"),
+            "mdl": _discovery_model(device_config),
         },
         "o": {
             "name": "tuya2mqtt",
@@ -49,7 +49,7 @@ def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
             "ids": [f"tuya_{device_config['id']}"],
             "name": device_config["name"],
             "mf": device_config.get("manufacturer", "Tuya"),
-            "mdl": device_config.get("model", "Generic Device")
+            "mdl": _discovery_model(device_config)
         }
 
         # Handle the specific case for the ID reported in the mesh
@@ -86,3 +86,6 @@ def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
             topic = f"{discovery_prefix}/{component_type}/tuya_{safe_id}_{cmp_id}/config"
             mqtt_client.publish(topic, payload, retain=retain)
             logger.info(f"Published discovery for {device_key} {component_type} ({cmp_id})")
+
+def _discovery_model(device_config: dict[str, Any]) -> str:
+    return device_config.get("product_name") or device_config.get("model") or "Generic Device"

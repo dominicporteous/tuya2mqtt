@@ -43,3 +43,34 @@ def test_tuya_client_passes_connection_options(monkeypatch):
         "max_simultaneous_dps": 12,
     }
     assert created["version"] == 3.4
+
+
+def test_tuya_client_status_error_is_nonfatal_by_default(monkeypatch):
+    class FakeDevice:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def set_version(self, version):
+            pass
+
+        def status(self):
+            return {"Error": "Unexpected Payload from Device", "Err": "904", "Payload": None}
+
+    def fail_exit(code):
+        raise AssertionError(f"sys.exit should not be called, got {code}")
+
+    monkeypatch.setattr("tuya2mqtt_local.tuya.tinytuya.Device", FakeDevice)
+    monkeypatch.setattr("sys.exit", fail_exit)
+
+    client = TuyaClient(
+        {
+            "id": "bf1234567890abcdef",
+            "ip": "192.168.0.55",
+            "local_key": "abcdef0123456789",
+            "name": "Office Plug",
+            "profile": "plug",
+        }
+    )
+
+    assert client.status() is None
+    assert client.is_online() is False

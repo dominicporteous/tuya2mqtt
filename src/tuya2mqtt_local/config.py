@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 CATEGORY_TO_PROFILE = {
     "cz": "plug",  # Socket/Plug
     "kt": "dehumidifier_aircon",  # Air Conditioner
+    "wk": "thermostat",  # Thermostat
 }
 
 # Mapping from Tuya DP codes to internal mapping keys
@@ -26,11 +27,21 @@ DP_CODE_TO_INTERNAL = {
     "humidity_set": "target_humidity",
     "humidity_current": "current_humidity",
     "child_lock": "child_lock",
+    "eco": "eco",
+    "upper_temp": "ambient_temperature",
 }
 
 # Translation for common Tuya values to Home Assistant standard values
 VALUE_TRANSLATIONS = {
     "mode": {"cold": "cool", "hot": "heat", "wet": "dry", "wind": "fan_only", "auto": "auto"}
+}
+
+THERMOSTAT_LOCAL_FALLBACK_MAPPINGS = {
+    # Some WT81-family thermostats report these DPS locally even though they are
+    # omitted from the Tuya cloud schema returned in devices.json.
+    "current_temperature": {"dps": "102", "type": "integer", "scale": 2, "unit": "\u00b0C"},
+    "sensor_mode": {"dps": "103", "type": "string"},
+    "thermostat_active": {"dps": "104", "type": "boolean"},
 }
 
 
@@ -69,6 +80,10 @@ def load_config(path: str) -> dict[str, Any]:
                     device["local_key"] = match["key"]
                 if "name" not in device and "name" in match:
                     device["name"] = match["name"]
+                if "product_name" not in device:
+                    product_name = _device_product_name(match)
+                    if product_name:
+                        device["product_name"] = product_name
                 if "profile" not in device:
                     category = match.get("category")
                     if category in CATEGORY_TO_PROFILE:
@@ -104,7 +119,18 @@ def load_config(path: str) -> dict[str, Any]:
                                 if code == "fan_speed_enum" and "range" in values:
                                     m["values"] = {v: v for v in values["range"]}
 
+                            if device.get("profile") == "thermostat" and code in ("temp_set", "upper_temp"):
+                                m["scale"] = 2
+                                if "min" in m: m["min"] = m["min"] / 2
+                                if "max" in m: m["max"] = m["max"] / 2
+                                if code == "temp_set":
+                                    m["step"] = 0.5
+
                             device["mappings"][internal_key] = m
+
+                    if device.get("profile") == "thermostat":
+                        for key, mapping in THERMOSTAT_LOCAL_FALLBACK_MAPPINGS.items():
+                            device["mappings"].setdefault(key, mapping.copy())
                     
                     logger.debug(f"Auto-generated mappings for {device_id}: {list(device['mappings'].keys())}")
 
@@ -115,6 +141,13 @@ def _internal_mapping_key(profile: str | None, code: str) -> str:
     if profile == "plug" and code == "switch":
         return "switch"
     return DP_CODE_TO_INTERNAL[code]
+
+def _device_product_name(device: dict[str, Any]) -> str | None:
+    for key in ("product_name", "productName", "product name"):
+        value = device.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
 
 def validate_config(config: dict[str, Any]):
     required_sections = ["mqtt", "bridge", "devices"]
