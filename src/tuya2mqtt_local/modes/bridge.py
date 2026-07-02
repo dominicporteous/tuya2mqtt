@@ -96,7 +96,7 @@ class BridgeMode:
 
     def publish_availability(self, device_key: str):
         device = self.devices[device_key]
-        base_topic = f"{self.config['mqtt']['base_topic']}/{device_key}"
+        base_topic = f"{self.config['mqtt'].get('base_topic', 'tuya')}/{device_key}"
         availability = "online" if device["client"].is_online() else "offline"
         self.mqtt.publish(f"{base_topic}/availability", availability, retain=True)
 
@@ -113,7 +113,7 @@ class BridgeMode:
         if device["config"].get("mappings", {}).get("raw", {}).get("include_unmapped"):
             state["raw_dps"] = raw_dps
         
-        base_topic = f"{self.config['mqtt']['base_topic']}/{device_key}"
+        base_topic = f"{self.config['mqtt'].get('base_topic', 'tuya')}/{device_key}"
         self.mqtt.publish(f"{base_topic}/state", state, retain=self.config["mqtt"].get("retain_state", False))
         
         # If requested, also publish to debug topic

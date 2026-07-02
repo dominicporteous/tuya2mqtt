@@ -111,10 +111,19 @@ class TuyaClient:
             data = self.device.set_multiple_values(payload)
             if data and "Error" not in data:
                 return True
-            logger.error(f"Error setting DPS for {self.name}: {data.get('Error', 'Unknown error')}")
+            error = data.get("Error", "Unknown error") if isinstance(data, dict) else "Unknown error"
+            self._handle_command_error(f"Error setting DPS for {self.name}: {error}")
         except Exception as e:
-            logger.error(f"Failed to set DPS for {self.name}: {e}")
+            self._handle_command_error(f"Failed to set DPS for {self.name}: {e}")
         return False
+
+    def _handle_command_error(self, message: str):
+        if self.exit_on_command_error:
+            logger.critical(f"{message} - Exiting process as configured.")
+            import sys
+
+            sys.exit(1)
+        logger.error(message)
 
     def is_online(self) -> bool:
         return self._is_online

@@ -126,14 +126,16 @@ def load_config(path: str) -> dict[str, Any]:
                             # If scale is 1, it usually means 1 decimal place.
                             values = info.get("values", {})
                             if isinstance(values, dict):
-                                if values.get("scale") == 1:
-                                    m["scale"] = 10
+                                scale = values.get("scale")
+                                scale_divisor = 10 ** scale if isinstance(scale, int) and scale > 0 else None
+                                if scale_divisor:
+                                    m["scale"] = scale_divisor
                                 if "min" in values:
-                                    m["min"] = values["min"]
+                                    m["min"] = _scale_mapping_bound(values["min"], scale_divisor)
                                 if "max" in values:
-                                    m["max"] = values["max"]
+                                    m["max"] = _scale_mapping_bound(values["max"], scale_divisor)
                                 if "step" in values:
-                                    m["step"] = values["step"]
+                                    m["step"] = _scale_mapping_bound(values["step"], scale_divisor)
                                 if "unit" in values:
                                     m["unit"] = values["unit"]
                                 
@@ -152,12 +154,14 @@ def load_config(path: str) -> dict[str, Any]:
 
                             if device.get("profile") == "thermostat" and code in ("temp_set", "upper_temp"):
                                 m["scale"] = 2
-                                if "min" in m:
-                                    m["min"] = m["min"] / 2
-                                if "max" in m:
-                                    m["max"] = m["max"] / 2
+                                if "min" in values:
+                                    m["min"] = values["min"] / 2
+                                if "max" in values:
+                                    m["max"] = values["max"] / 2
                                 if code == "temp_set":
                                     m["step"] = 0.5
+                                elif "step" in values:
+                                    m["step"] = values["step"]
 
                             device["mappings"][internal_key] = m
 
@@ -174,6 +178,11 @@ def _internal_mapping_key(profile: str | None, code: str) -> str:
     if profile == "plug" and code == "switch":
         return "switch"
     return DP_CODE_TO_INTERNAL[code]
+
+def _scale_mapping_bound(value: Any, scale: int | None) -> Any:
+    if scale and isinstance(value, (int, float)):
+        return value / scale
+    return value
 
 def _device_product_name(device: dict[str, Any]) -> str | None:
     for key in ("product_name", "productName", "product name"):

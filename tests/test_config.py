@@ -73,6 +73,67 @@ def test_plug_auto_mapping_uses_switch_key(tmp_path):
     }
 
 
+def test_auto_mapping_scales_positive_scale_exponents_and_bounds(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    devices_path = tmp_path / "devices.json"
+
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "mqtt": {"host": "localhost"},
+                "bridge": {},
+                "devices": [{"id": "plug-device", "ip": "192.168.1.50"}],
+            }
+        )
+    )
+    devices_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "plug-device",
+                    "name": "Office Plug",
+                    "key": "0123456789abcdef",
+                    "category": "cz",
+                    "mapping": {
+                        "5": {
+                            "code": "cur_power",
+                            "type": "Integer",
+                            "values": {"unit": "W", "min": 160, "max": 300, "scale": 1, "step": 5},
+                        },
+                        "6": {
+                            "code": "cur_voltage",
+                            "type": "Integer",
+                            "values": {"unit": "V", "min": 0, "max": 25000, "scale": 2, "step": 25},
+                        },
+                    },
+                }
+            ]
+        )
+    )
+
+    config = load_config(str(config_path))
+
+    [device] = config["devices"]
+    assert device["mappings"]["power"] == {
+        "dps": "5",
+        "type": "integer",
+        "scale": 10,
+        "min": 16,
+        "max": 30,
+        "step": 0.5,
+        "unit": "W",
+    }
+    assert device["mappings"]["voltage"] == {
+        "dps": "6",
+        "type": "integer",
+        "scale": 100,
+        "min": 0,
+        "max": 250,
+        "step": 0.25,
+        "unit": "V",
+    }
+
+
 def test_devices_json_product_name_variants_are_normalized(tmp_path):
     config_path = tmp_path / "config.yaml"
     devices_path = tmp_path / "devices.json"

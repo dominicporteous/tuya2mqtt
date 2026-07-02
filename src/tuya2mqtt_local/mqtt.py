@@ -69,15 +69,21 @@ class MqttClient:
                         self.on_connect_cb()
                 return
 
-            # tuya/<device_key>/set/<command>
-            # tuya/<device_key>/set/dps/<dps_id>
-            parts = topic.split("/")
-            if len(parts) >= 4 and parts[2] == "set":
-                device_key = parts[1]
-                if parts[3] == "dps" and len(parts) >= 5:
-                    command = f"dps/{parts[4]}"
+            # <base_topic>/<device_key>/set/<command>
+            # <base_topic>/<device_key>/set/dps/<dps_id>
+            base_topic = self.config.get("base_topic", "tuya").strip("/")
+            topic_parts = topic.strip("/").split("/")
+            base_parts = base_topic.split("/") if base_topic else []
+            if topic_parts[:len(base_parts)] != base_parts:
+                return
+
+            parts = topic_parts[len(base_parts):]
+            if len(parts) >= 3 and parts[1] == "set":
+                device_key = parts[0]
+                if parts[2] == "dps" and len(parts) >= 4:
+                    command = f"dps/{parts[3]}"
                 else:
-                    command = parts[3]
+                    command = parts[2]
                 
                 self.on_command(device_key, command, payload)
         except Exception as e:
