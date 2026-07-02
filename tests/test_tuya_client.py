@@ -1,7 +1,7 @@
 from tuya2mqtt_local.tuya import TuyaClient
 
 
-def test_tuya_client_passes_connection_options(monkeypatch):
+def test_tuya_client_passes_supported_connection_options(monkeypatch):
     created = {}
 
     class FakeDevice:
@@ -40,7 +40,6 @@ def test_tuya_client_passes_connection_options(monkeypatch):
         "persist": True,
         "connection_retry_limit": 4,
         "connection_retry_delay": 2,
-        "max_simultaneous_dps": 12,
     }
     assert created["version"] == 3.4
 

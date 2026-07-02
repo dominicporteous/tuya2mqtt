@@ -24,7 +24,6 @@ class TuyaClient:
         self.connection_retry_limit = device_config.get("connection_retry_limit", 3)
         self.connection_retry_delay = device_config.get("connection_retry_delay_seconds", 5)
         self.persist = device_config.get("persist", False)
-        self.max_simultaneous_dps = device_config.get("max_simultaneous_dps", 0)
         self.exit_on_command_error = exit_on_command_error
         self.exit_on_status_error = exit_on_status_error
 
@@ -37,7 +36,6 @@ class TuyaClient:
             persist=self.persist,
             connection_retry_limit=self.connection_retry_limit,
             connection_retry_delay=self.connection_retry_delay,
-            max_simultaneous_dps=self.max_simultaneous_dps,
         )
         self.device.set_version(float(self.version))
         self._is_online = False

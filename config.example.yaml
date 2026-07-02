@@ -33,7 +33,6 @@ devices:
     connection_timeout_seconds: 5 # Optional
     connection_retry_limit: 3 # Optional
     connection_retry_delay_seconds: 5 # Optional
-    max_simultaneous_dps: 0 # Optional; useful for some devices with many DPS values.
     profile: plug # Optional (if using wizard/devices.json)
     manufacturer: Tuya # Optional (if using wizard/devices.json)
     model: Generic Power Plug # Optional (if using wizard/devices.json)

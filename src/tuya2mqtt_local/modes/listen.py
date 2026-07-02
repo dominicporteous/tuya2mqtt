@@ -34,7 +34,8 @@ def listen_mode(
         return
 
     client = TuyaClient(device_config)
-    console.print(f"Listening to {device_key} {device_config['id']} at {device_config['ip']}")
+    if not json_output:
+        console.print(f"Listening to {device_key} {device_config['id']} at {device_config['ip']}")
     
     initial_dps = client.status()
     if initial_dps is None:
