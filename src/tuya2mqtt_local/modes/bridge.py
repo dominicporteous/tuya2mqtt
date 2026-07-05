@@ -1,6 +1,5 @@
 import logging
 import time
-import json
 from typing import Any
 from ..mqtt import MqttClient
 from ..tuya import TuyaClient
@@ -52,31 +51,40 @@ class BridgeMode:
         for key in self.devices:
             self.publish_availability(key)
 
+    @staticmethod
+    def _device_label(device_key: str, device: dict[str, Any]) -> str:
+        device_config = device.get("config", {})
+        device_name = device_config.get("name")
+        if device_name:
+            return f"{device_name} ({device_key})"
+        return device_key
+
     def handle_command(self, device_key: str, command: str, payload: str):
         if device_key not in self.devices:
             logger.warning(f"Received command for unknown device: {device_key}")
             return
         
         device = self.devices[device_key]
+        device_label = self._device_label(device_key, device)
         profile = device["profile"]
         if not profile:
-            self.__class__.logger.warning(f"No profile for device: {device_key}")
+            logger.warning(f"No profile for device: {device_label}")
             return
 
         try:
             if command.startswith("dps/"):
-                logging.getLogger(__name__).info(f"Handling dps {command} for {device_key}")
+                logging.getLogger(__name__).info(f"Handling dps {command} for {device_label}")
                 dps_id = command.split("/")[1]
                 # Try to parse payload as JSON, fallback to string
                 try:
                     import json
                     value = json.loads(payload)
-                except:
+                except ValueError:
                     from ..util import parse_raw_value
                     value = parse_raw_value(payload)
                 device["client"].set_dps(dps_id, value)
             else:
-                logging.getLogger(__name__).info(f"Handling non-dps {command} for {device_key}")
+                logging.getLogger(__name__).info(f"Handling non-dps {command} for {device_label}")
                 updates = profile.command_to_dps(command, payload, device["config"].get("mappings", {}))
                 if updates:
                     for dps_id, value in updates:
@@ -89,9 +97,9 @@ class BridgeMode:
                     if raw_dps:
                         self.publish_state(device_key, raw_dps)
                 else:
-                    logging.getLogger(__name__).warning(f"Profile {profile.name} could not map command {command} for {device_key}")
+                    logging.getLogger(__name__).warning(f"Profile {profile.name} could not map command {command} for {device_label}")
         except Exception as e:
-            logging.getLogger(__name__).error(f"Error handling command {command} for {device_key}: {e}")
+            logging.getLogger(__name__).error(f"Error handling command {command} for {device_label}: {e}")
         
 
     def publish_availability(self, device_key: str):
@@ -107,7 +115,7 @@ class BridgeMode:
             return
 
         state = profile.normalize_state(raw_dps, device["config"].get("mappings", {}))
-        logger.info(f"Publishing state for {device_key}: {state}")
+        logger.info(f"Publishing state for {self._device_label(device_key, device)}: {state}")
         
         # Add raw DPS if requested
         if device["config"].get("mappings", {}).get("raw", {}).get("include_unmapped"):
@@ -128,6 +136,8 @@ class BridgeMode:
         while True:
             for key, device in self.devices.items():
                 try:
+                    logger.info(f"Polling device {self._device_label(key, device)}")
+
                     raw_dps = device["client"].status()
                     current_online = device["client"].is_online()
                     
@@ -138,6 +148,6 @@ class BridgeMode:
                     if raw_dps:
                         self.publish_state(key, raw_dps)
                 except Exception as e:
-                    logger.error(f"Error polling device {key}: {e}")
+                    logger.error(f"Error polling device {self._device_label(key, device)}: {e}")
             
             time.sleep(poll_interval)

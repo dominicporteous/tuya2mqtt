@@ -43,6 +43,7 @@ class TuyaClient:
     def status(self) -> Optional[dict[str, Any]]:
         """Get status from device."""
         try:
+            logger.info(f"Query state for device {self.device.id} ({self.device.address})")
             data = self.device.status()
             if data and "dps" in data:
                 self._is_online = True
