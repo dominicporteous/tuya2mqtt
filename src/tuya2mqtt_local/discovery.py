@@ -69,11 +69,12 @@ def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
             continue
 
         device_key = device_config["key"]
+        device_name = device_config["name"]
         base_topic = f"{mqtt_config.get('base_topic', 'tuya')}/{device_key}"
         
         device_info = {
             "ids": [f"tuya_{device_config['id']}"],
-            "name": device_config["name"],
+            "name": device_name,
             "mf": device_config.get("manufacturer", "Tuya"),
             "mdl": _discovery_model(device_config)
         }
@@ -112,7 +113,7 @@ def publish_discovery(mqtt_client: Any, config: dict[str, Any]):
             
             topic = f"{discovery_prefix}/{component_type}/tuya_{safe_id}_{cmp_id}/config"
             mqtt_client.publish(topic, payload, retain=retain)
-            logger.info(f"Published discovery for {device_key} {component_type} ({cmp_id})")
+            logger.info(f"Published discovery for {device_name} ({device_key}) {component_type} ({cmp_id})")
 
 
 def _clear_stale_discovery(
